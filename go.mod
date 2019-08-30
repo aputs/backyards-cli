@@ -14,6 +14,7 @@ require (
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/viper v1.4.0
+	github.com/waynz0r/grafterm v0.2.1-0.20190814214739-b7722452f1e4
 	istio.io/operator v0.0.0-20190805193245-ce3cfb6e2672
 	k8s.io/api v0.0.0-20190620084959-7cf5895f2711
 	k8s.io/apiextensions-apiserver v0.0.0-20190426053235-842c4571cde0

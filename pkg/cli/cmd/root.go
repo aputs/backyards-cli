@@ -118,4 +118,5 @@ func init() {
 	RootCmd.AddCommand(canary.NewRootCmd(cli))
 	RootCmd.AddCommand(demoapp.NewRootCmd(cli))
 	RootCmd.AddCommand(routing.NewRootCmd(cli))
+	RootCmd.AddCommand(NewGraphCmd(cli))
 }

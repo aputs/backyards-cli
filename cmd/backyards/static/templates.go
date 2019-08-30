@@ -38,6 +38,8 @@ var BackyardsDemoChartSource http.FileSystem = http.Dir(path.Join(getRepoRoot(),
 // Istio assets
 var IstioAssetsSource http.FileSystem = http.Dir(path.Join(getRepoRoot(), "assets/istio"))
 
+var GraphTemplates http.FileSystem = http.Dir(path.Join(getRepoRoot(), ".graphtemplates"))
+
 // getRepoRoot returns the full path to the root of the repo
 func getRepoRoot() string {
 	_, filename, _, _ := runtime.Caller(0)
