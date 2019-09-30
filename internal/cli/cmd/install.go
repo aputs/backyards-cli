@@ -70,6 +70,7 @@ type InstallOptions struct {
 	installCertManager bool
 	disableCertManager bool
 	disableAuditSink   bool
+	enableAuth         bool
 	installEverything  bool
 	runDemo            bool
 }
@@ -144,6 +145,7 @@ The command can install every component at once with the '--install-everything' 
 	cmd.Flags().BoolVar(&options.runDemo, "run-demo", options.runDemo, "Send load to demo application and opens up dashboard")
 	cmd.Flags().BoolVar(&options.disableCertManager, "disable-cert-manager", options.disableCertManager, "Disable dependency on cert-manager and on it's resources")
 	cmd.Flags().BoolVar(&options.disableAuditSink, "disable-auditsink", options.disableAuditSink, "Disable deploying the auditsink service and sending audit logs over http")
+	cmd.Flags().BoolVar(&options.enableAuth, "enable-auth", options.enableAuth, "Enable authentication with impersonation")
 
 	cmd.Flags().BoolVarP(&options.dumpResources, "dump-resources", "d", options.dumpResources, "Dump resources to stdout instead of applying them")
 
@@ -165,6 +167,10 @@ func (c *installCommand) run(cli cli.CLI, options *InstallOptions) error {
 	values, err := getValues(options.releaseName, options.istioNamespace, func(values *Values) {
 		values.CertManager.Enabled = !options.disableCertManager
 		values.AuditSink.Enabled = !options.disableAuditSink
+		if options.enableAuth {
+			values.Auth.Method = impersonation
+			values.Impersonation.Enabled = true
+		}
 	})
 	if err != nil {
 		return err
