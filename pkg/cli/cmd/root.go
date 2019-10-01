@@ -21,6 +21,7 @@ import (
 
 	"emperror.dev/errors"
 	logrushandler "emperror.dev/handler/logrus"
+	"github.com/banzaicloud/backyards-cli/internal/cli/cmd/login"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -134,4 +135,5 @@ func init() {
 	RootCmd.AddCommand(routing.NewRootCmd(cli))
 	RootCmd.AddCommand(certmanager.NewRootCmd(cli))
 	RootCmd.AddCommand(graph.NewGraphCmd(cli, "base.json"))
+	RootCmd.AddCommand(login.NewLoginCmd(cli))
 }

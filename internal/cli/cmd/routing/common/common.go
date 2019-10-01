@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"emperror.dev/errors"
+	"github.com/banzaicloud/backyards-cli/pkg/auth"
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -131,4 +132,27 @@ func GetGraphQLClient(cli cli.CLI) (graphql.Client, error) {
 	client.SetJWTToken(token)
 
 	return client, nil
+}
+
+func GetAuthClient(cli cli.CLI, apiUrl string) (auth.Client, error) {
+	config, err := cli.GetK8sConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	if apiUrl == "" {
+		pf, err := cli.GetPortforwardForIGW(0)
+		if err != nil {
+			return nil, err
+		}
+
+		err = pf.Run()
+		if err != nil {
+			return nil, err
+		}
+
+		apiUrl = pf.GetURL("/api/login")
+	}
+
+	return auth.NewClient(config, apiUrl), nil
 }
