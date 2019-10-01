@@ -118,41 +118,27 @@ func GetGraphQLClient(cli cli.CLI) (graphql.Client, error) {
 		return nil, err
 	}
 
-	pf, err := cli.GetPortforwardForIGW(0)
+	url, err := cli.GetEndpointURL("/api/graphql")
 	if err != nil {
 		return nil, err
 	}
 
-	err = pf.Run()
-	if err != nil {
-		return nil, err
-	}
-
-	client := graphql.NewClient(pf.GetURL("/api/graphql"))
+	client := graphql.NewClient(url)
 	client.SetJWTToken(token)
 
 	return client, nil
 }
 
-func GetAuthClient(cli cli.CLI, apiUrl string) (auth.Client, error) {
+func GetAuthClient(cli cli.CLI) (auth.Client, error) {
 	config, err := cli.GetK8sConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	if apiUrl == "" {
-		pf, err := cli.GetPortforwardForIGW(0)
-		if err != nil {
-			return nil, err
-		}
-
-		err = pf.Run()
-		if err != nil {
-			return nil, err
-		}
-
-		apiUrl = pf.GetURL("/api/login")
+	url, err := cli.GetEndpointURL("/api/login")
+	if err != nil {
+		return nil, err
 	}
 
-	return auth.NewClient(config, apiUrl), nil
+	return auth.NewClient(config, url), nil
 }

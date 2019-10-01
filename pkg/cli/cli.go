@@ -15,6 +15,7 @@
 package cli
 
 import (
+	"fmt"
 	"io"
 	"os"
 
@@ -50,8 +51,10 @@ type CLI interface {
 	GetRootCommand() *cobra.Command
 	GetK8sClient() (k8sclient.Client, error)
 	GetK8sConfig() (*rest.Config, error)
-	GetPortforwardForPod(podLabels map[string]string, namespace string, localPort, remotePort int) (*portforward.Portforward, error)
-	GetPortforwardForIGW(localPort int) (*portforward.Portforward, error)
+	// GetEndpointURL returns the Backyards base URL
+	// which may create a port-forward on a predefined or random port
+	// unless a custom endpoint url is defined
+	GetEndpointURL(path string) (string, error)
 }
 
 type backyardsCLI struct {
@@ -155,4 +158,20 @@ func (c *backyardsCLI) GetK8sConfig() (*rest.Config, error) {
 	}
 
 	return config, nil
+}
+
+func (c *backyardsCLI) GetEndpointURL(path string) (string, error) {
+	url := viper.GetString("backyards.url")
+	if url == "" {
+		pf, err := c.GetPortforwardForIGW(viper.GetInt("backyards.portforward"))
+		if err != nil {
+			return "", err
+		}
+		err = pf.Run()
+		if err != nil {
+			return "", err
+		}
+		return pf.GetURL(path), nil
+	}
+	return fmt.Sprintf("%s%s", url, path), nil
 }

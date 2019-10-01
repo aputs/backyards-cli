@@ -38,6 +38,7 @@ import (
 
 const (
 	defaultNamespace = "backyards-system"
+	defaultPortForward = 50500
 )
 
 var (
@@ -46,6 +47,8 @@ var (
 	kubeContext        string
 	verbose            bool
 	outputFormat       string
+	baseUrl            string
+	portForward        int
 
 	namespaceRegex = regexp.MustCompile(`^[a-zA-Z0-9-]+$`)
 )
@@ -62,6 +65,13 @@ var RootCmd = &cobra.Command{
 			log.SetLevel(log.DebugLevel)
 		} else {
 			log.SetLevel(log.InfoLevel)
+		}
+
+		if viper.GetInt("port-forward") < 0 {
+			return errors.NewWithDetails(
+				"port must be greater than or equal to zero",
+				"port", viper.GetInt("port-forward"),
+			)
 		}
 
 		namespaceFromEnv := os.Getenv("BACKYARDS_NAMESPACE")
@@ -122,6 +132,12 @@ func init() {
 	_ = viper.BindPFlag("formatting.non-interactive", flags.Lookup("non-interactive"))
 	flags.Bool("interactive", false, "ask questions interactively even if stdin or stdout is non-tty")
 	_ = viper.BindPFlag("formatting.force-interactive", flags.Lookup("interactive"))
+
+	flags.StringVarP(&baseUrl, "base-url", "u", baseUrl, "Custom Backyards base URL. Uses automatic port forwarding if empty.")
+	_ = viper.BindPFlag("backyards.url", flags.Lookup("base-url"))
+
+	flags.IntVarP(&portForward, "port-forward", "p", defaultPortForward, "Automatically port-forward Backyards on this local port (when set to 0, a random port will be used) otherwise use `--base-url`.")
+	_ = viper.BindPFlag("backyards.portforward", flags.Lookup("port-forward"))
 
 	cli := cli.NewCli(os.Stdout, RootCmd)
 

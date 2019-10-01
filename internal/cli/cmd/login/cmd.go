@@ -28,8 +28,7 @@ func NewLoginCmd(cli cli.CLI) *cobra.Command {
 		Aliases: []string{"l"},
 		Short:   "Log in to Backyards",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			apiUrl, _ := cmd.Flags().GetString("api-url")
-			authClient, err := common.GetAuthClient(cli, apiUrl)
+			authClient, err := common.GetAuthClient(cli)
 			if err != nil {
 				return err
 			}
@@ -42,7 +41,7 @@ func NewLoginCmd(cli cli.CLI) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String("api-url", "", "Custom Backyards API URL. Use port-forwarding if empty.")
+	cmd.PersistentFlags().String("base-url", "", "Custom Backyards base URL. Use port-forwarding if empty.")
 
 	return cmd
 }

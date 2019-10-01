@@ -394,8 +394,7 @@ func (c *installCommand) runDemo(cli cli.CLI, options *InstallOptions) error {
 	}
 
 	dbOptions := NewDashboardOptions()
-	dbOptions.URI = "?namespaces=" + demoapp.GetNamespace()
-	dbOptions.Port = 0
+	dbOptions.QueryParams["namespaces"] = demoapp.GetNamespace()
 	dbCmd := NewDashboardCommand(cli, dbOptions)
 	err = dbCmd.RunE(dbCmd, nil)
 	if err != nil {
