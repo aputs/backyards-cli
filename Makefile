@@ -7,7 +7,8 @@ PACKAGE = github.com/banzaicloud/backyards-cli
 BINARY_NAME = backyards
 
 # Helm charts
-CHARTS_DIR ?= assets/charts
+ASSETS_DIR ?= assets
+CHARTS_DIR ?= ${ASSETS_DIR}/charts
 
 # Build variables
 BUILD_DIR ?= build
@@ -26,12 +27,12 @@ endif
 
 # Dependency versions
 GOTESTSUM_VERSION = 0.3.3
-GOLANGCI_VERSION = 1.16.0
+GOLANGCI_VERSION = 1.18.0
 LICENSEI_VERSION = 0.1.0
 GORELEASER_VERSION = 0.112.2
 PACKR_VERSION = 2.0.8
 
-GOLANG_VERSION = 1.12
+GOLANG_VERSION = 1.13
 
 # Add the ability to override some variables
 # Use with care
@@ -50,6 +51,7 @@ endif
 
 .PHONY: pre-build
 pre-build: ## Pre build bundles of static assets
+	find ${ASSETS_DIR}/ -exec touch -t 201901010101 {} +
 	go generate ${BUILD_PACKAGE}
 
 .PHONY: build
@@ -65,6 +67,14 @@ endif
 .PHONY: build-release
 build-release: LDFLAGS += -w
 build-release: build ## Build a binary without debug information
+
+.PHONY: build-debug
+build-debug: ## Build a binary with remote debugging capabilities
+	@${MAKE} GOARGS="${GOARGS} -gcflags \"all=-N -l\"" BUILD_DIR="${BUILD_DIR}/debug" build
+
+.PHONY: debug
+debug: build-debug
+	dlv --listen=:40000 --log --headless=true --api-version=2 exec "${BUILD_DIR}/debug/${BINARY_NAME}" -- ${ARGS}
 
 .PHONY: generate-docs
 generate-docs: ## Generate documentation for Backyards CLI

@@ -2,20 +2,18 @@ linters:
     enable-all: true
     disable:
         - maligned
-
-        # TODO: fix these
-        - dupl
         - gochecknoglobals
         - lll
-        - deadcode
-        - golint
         - gochecknoinits
-        - gofmt
-        - gocritic
-        - megacheck
-        - errcheck
-        - goimports
+        - funlen
 
 linters-settings:
+    funlen:
+        lines: 100
+
     golint:
         min-confidence: 0.1
+    goimports:
+        # put imports beginning with prefix after 3rd-party packages;
+        # it's a comma-separated list of prefixes
+        local-prefixes: github.com/banzaicloud

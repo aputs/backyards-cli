@@ -14,6 +14,14 @@ Expand the name of the chart.
 {{- printf "%s-grafana" (include "backyards.name" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
+{{- define "tracing.name" -}}
+{{- printf "%s-tracing" (include "backyards.name" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "auditsink.name" -}}
+{{- printf "%s-auditsink" (include "backyards.name" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
 {{- define "ingressgateway.name" -}}
 {{- printf "%s-ingressgateway" (include "backyards.name" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
@@ -50,6 +58,19 @@ Create a default fully qualified app name for the Grafana component
 {{- printf "%s-grafana" (include "backyards.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
+{{/*
+Create a default fully qualified app name for the tracing component
+*/}}
+{{- define "tracing.fullname" -}}
+{{- printf "%s-tracing" (include "backyards.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Create a default fully qualified app name for the AuditSink component
+*/}}
+{{- define "auditsink.fullname" -}}
+{{- printf "%s-auditsink" (include "backyards.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
 
 {{/*
 Create a default fully qualified app name for the Ingress gateway component
@@ -75,3 +96,5 @@ Source: https://stackoverflow.com/a/52024583/3027614
 {{- $template := index . 2 }}
 {{- include $template (dict "Chart" (dict "Name" $subchart) "Values" (index $dot.Values $subchart) "Release" $dot.Release "Capabilities" $dot.Capabilities) }}
 {{- end -}}
+
+

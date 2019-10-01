@@ -15,17 +15,21 @@
 package graphql
 
 import (
-	"context"
-
 	"github.com/machinebox/graphql"
 )
 
 type Client interface {
+	SetJWTToken(string)
 	GenerateLoad(req GenerateLoadRequest) (GenerateLoadResponse, error)
+	ApplyHTTPRoute(req ApplyHTTPRouteRequest) (ApplyHTTPRouteResponse, error)
+	DisableHTTPRoute(req DisableHTTPRouteRequest) (DisableHTTPRouteResponse, error)
+	ApplyGlobalTrafficPolicy(req ApplyGlobalTrafficPolicyRequest) (ApplyGlobalTrafficPolicyResponse, error)
+	DisableGlobalTrafficPolicy(req DisableGlobalTrafficPolicyRequest) (DisableGlobalTrafficPolicyResponse, error)
 }
 
 type client struct {
-	client *graphql.Client
+	jwtToken string
+	client   *graphql.Client
 }
 
 func NewClient(url string, opt ...graphql.ClientOption) Client {
@@ -34,47 +38,18 @@ func NewClient(url string, opt ...graphql.ClientOption) Client {
 	}
 }
 
-type GenerateLoadRequest struct {
-	Namespace string
-	Service   string
-	Port      int
-	Endpoint  string
-	Method    string
-	Frequency int
-	Duration  int
-	Headers   map[string]string
+func (c *client) SetJWTToken(token string) {
+	c.jwtToken = token
 }
 
-type GenerateLoadResponse map[string]int
-
-func (c *client) GenerateLoad(req GenerateLoadRequest) (GenerateLoadResponse, error) {
-	request := `
-	mutation load($namespace: String!, $service: String!, $port: Int!, $endpoint: String!, $method: String!, $body: String, $headers: Map, $frequency: Int!, $duration: Int!) {
-		generateLoad(namespace: $namespace, service: $service, port: $port, endpoint: $endpoint, method: $method, body: $body, headers: $headers, frequency: $frequency, duration: $duration)
-	}
-`
-
-	r := graphql.NewRequest(request)
-
-	r.Var("namespace", req.Namespace)
-	r.Var("service", req.Service)
-	r.Var("port", req.Port)
-	r.Var("endpoint", req.Endpoint)
-	r.Var("method", req.Method)
-	r.Var("frequency", req.Frequency)
-	r.Var("duration", req.Duration)
-	r.Var("headers", req.Headers)
+func (c *client) NewRequest(q string) *graphql.Request {
+	r := graphql.NewRequest(q)
 
 	// set header fields
+	if c.jwtToken != "" {
+		r.Header.Set("Authorization", "Bearer "+c.jwtToken)
+	}
 	r.Header.Set("Cache-Control", "no-cache")
 
-	// run it and capture the response
-	var respData map[string]GenerateLoadResponse
-	if err := c.client.Run(context.Background(), r, &respData); err != nil {
-		return nil, err
-	}
-
-	resp := respData["generateLoad"]
-
-	return resp, nil
+	return r
 }

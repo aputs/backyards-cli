@@ -21,6 +21,7 @@ import (
 	"path"
 	"strings"
 
+	"emperror.dev/errors"
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/proto/hapi/chart"
 	"k8s.io/helm/pkg/renderutil"
@@ -39,17 +40,69 @@ func GetDefaultValues(fs http.FileSystem) ([]byte, error) {
 	defer file.Close()
 
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(file)
+	_, err = buf.ReadFrom(file)
+	if err != nil {
+		return nil, errors.WrapIf(err, "could not read default values")
+	}
 
 	return buf.Bytes(), nil
 }
 
-func Render(fs http.FileSystem, values string, releaseOptions ReleaseOptions) (object.K8sObjects, error) {
+func Render(fs http.FileSystem, values string, releaseOptions ReleaseOptions, chartName string) (object.K8sObjects, error) {
 	chrtConfig := &chart.Config{
 		Raw:    values,
 		Values: map[string]*chart.Value{},
 	}
 
+	files, err := getFiles(fs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create chart and render templates
+	chrt, err := chartutil.LoadFiles(files)
+	if err != nil {
+		return nil, err
+	}
+
+	renderOpts := renderutil.Options{
+		ReleaseOptions: chartutil.ReleaseOptions{
+			Name:      releaseOptions.Name,
+			IsInstall: true,
+			IsUpgrade: false,
+			Time:      timeconv.Now(),
+			Namespace: releaseOptions.Namespace,
+		},
+		KubeVersion: "",
+	}
+
+	renderedTemplates, err := renderutil.Render(chrt, chrtConfig, renderOpts)
+	if err != nil {
+		return nil, err
+	}
+
+	// Merge templates and inject
+	var buf bytes.Buffer
+	for _, tmpl := range files {
+		if !strings.HasSuffix(tmpl.Name, "yaml") && !strings.HasSuffix(tmpl.Name, "yml") && !strings.HasSuffix(tmpl.Name, "tpl") {
+			continue
+		}
+		t := path.Join(chartName, tmpl.Name)
+		if _, err := buf.WriteString(renderedTemplates[t]); err != nil {
+			return nil, err
+		}
+		buf.WriteString("\n---\n")
+	}
+
+	objects, err := object.ParseK8sObjectsFromYAMLManifest(buf.String())
+	if err != nil {
+		return nil, err
+	}
+
+	return objects, nil
+}
+
+func getFiles(fs http.FileSystem) ([]*chartutil.BufferedFile, error) {
 	files := []*chartutil.BufferedFile{
 		{
 			Name: chartutil.ChartfileName,
@@ -57,7 +110,6 @@ func Render(fs http.FileSystem, values string, releaseOptions ReleaseOptions) (o
 	}
 
 	// if the Helm chart templates use some resource files (like dashboards), those should be put under resources
-
 	for _, dirName := range []string{"resources", chartutil.TemplatesDir} {
 		dir, err := fs.Open(dirName)
 		if err != nil {
@@ -90,58 +142,21 @@ func Render(fs http.FileSystem, values string, releaseOptions ReleaseOptions) (o
 		f.Data = data
 	}
 
-	// Create chart and render templates
-	chrt, err := chartutil.LoadFiles(files)
-	if err != nil {
-		return nil, err
-	}
-
-	renderOpts := renderutil.Options{
-		ReleaseOptions: chartutil.ReleaseOptions{
-			Name:      releaseOptions.Name,
-			IsInstall: true,
-			IsUpgrade: false,
-			Time:      timeconv.Now(),
-			Namespace: releaseOptions.Namespace,
-		},
-		KubeVersion: "",
-	}
-
-	renderedTemplates, err := renderutil.Render(chrt, chrtConfig, renderOpts)
-	if err != nil {
-		return nil, err
-	}
-
-	// Merge templates and inject
-	var buf bytes.Buffer
-	for _, tmpl := range files {
-		if !strings.HasSuffix(tmpl.Name, "yaml") && !strings.HasSuffix(tmpl.Name, "yml") && !strings.HasSuffix(tmpl.Name, "tpl") {
-			continue
-		}
-		t := path.Join(renderOpts.ReleaseOptions.Name, tmpl.Name)
-		if _, err := buf.WriteString(renderedTemplates[t]); err != nil {
-			return nil, err
-		}
-		buf.WriteString("\n---\n")
-	}
-
-	objects, err := object.ParseK8sObjectsFromYAMLManifest(buf.String())
-	if err != nil {
-		return nil, err
-	}
-
-	return objects, nil
+	return files, nil
 }
 
 func readIntoBytes(fs http.FileSystem, filename string) ([]byte, error) {
 	file, err := fs.Open(filename)
 	if err != nil {
-		return nil, err
+		return nil, errors.WrapIf(err, "could not open file")
 	}
 	defer file.Close()
 
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(file)
+	_, err = buf.ReadFrom(file)
+	if err != nil {
+		return nil, errors.WrapIf(err, "could not read file")
+	}
 
 	return buf.Bytes(), nil
 }
